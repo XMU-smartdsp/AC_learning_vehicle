@@ -6,7 +6,7 @@ Created on Fri Mar  1 10:16:31 2019
 @author: happywjt
 """
 
-#设置GPU部分
+#GPU setting
 import os
 os.environ['CUDA_VISIBLE_DEVICES']='1'
 import sys
@@ -21,7 +21,7 @@ import matplotlib.pylab as plt
 import scipy.io as sio
 from sklearn.metrics import confusion_matrix,classification_report
 
-#制作混淆矩阵函数图函数
+#function to plot confusion matrix
 def plotconfusion(cm,title,num_classes,cmap = plt.cm.binary):
     plt.figure()
     plt.imshow(cm,interpolation='nearest',cmap=cmap)
@@ -36,28 +36,28 @@ def plotconfusion(cm,title,num_classes,cmap = plt.cm.binary):
     plt.savefig(savename, format='png')
 #import matplotlib.pyplot as plt
 
-#参数设置部分
-MODEL_INIT = np.load('./bvlc_alexnet_new.npy').item()                                             #载入预训练的imagenet预训练模型,需要提前下载好imagenet模型
-CLASS_NUM = 20                                                                                    #所做的分类类目个数
-BATCH_SIZE = 20                                                                                   #一个batch的个数
-EPOCH = 50                                                                                        #训练初始阶段模型时所用的epoch个数
+#parameter setting
+MODEL_INIT = np.load('./bvlc_alexnet_new.npy').item()                                             #Loading pre-trained imagenet model, a pre-downloaded model file are required
+CLASS_NUM = 20                                                                                    #Amount of classes to be classify
+BATCH_SIZE = 20                                                                                   #Batch size
+EPOCH = 50                                                                                        #Epoch of initialization stage
 EPOCH_all = 30																					  #进入主动学习后，每次迭代训练的epoch个数
-trainset_num = 3                                                                                  #训练初始阶段模型每个类别所选择的的样本数
-ACTIVE_TIME = 5                                                                                   #主动学习论数
-QUEUE_SIZE = 20                                                                                   #每轮主动学习所选择的高信息熵样本个数
-GOOD_SIZE = 20                                                                                    #每轮主动学习所选择的高置信度样本个数
+trainset_num = 3                                                                                  #Sample amount of 
+ACTIVE_TIME = 5                                                                                   #Query round for active learning
+QUEUE_SIZE = 20                                                                                   #High entropy sample amount in every query round
+GOOD_SIZE = 20                                                                                    #High conficence sample amount in every query round
 TRAIN_TIME = 300
 TEST = 5
 '''Car Fine grained'''
-MODEL_PATH = './model/'                                                 #模型存储路径
+MODEL_PATH = './model/'                                                 #model saved path
 FILE_PATH = './cars_list/'
-Experiment_NAME = 'comps_sv_20(3)_2'                                                              #实验名称，模型将以这个名字命名
+Experiment_NAME = 'comps_sv_20(3)_2'                                                              #Experiments name, your model saved files will be named under this name
 #Experiment_NAME_m = 'comps_sv_20(3)_3'
 PRETRAIN_MODEL_NAME = MODEL_PATH + Experiment_NAME +'.ckpt'
 
-#下面是对数据的选择，设置源域目录，目标域目录以及所选的车型序号
-data_dir = '/home/happywjt/carpictures/image/'                                                    #数据目录，数据存放格式见readme
-item_id = [1,15,20,35,48,60,73,86,111,124,137,162,175,188,212,225,238,250,263,276]                #这是随机选择的20类车型的序号
+#Data selection, source directory, target directory and selected car serial number
+data_dir = '/home/happywjt/carpictures/image/'                                                    #Data directory, the format of data storage is in readme file
+item_id = [1,15,20,35,48,60,73,86,111,124,137,162,175,188,212,225,238,250,263,276]                #This is the serial number of 20 types of cars selected randomly
 #item_id = range(1,101)                                                                           
 item_label = [0,4,8,15,16,17,18,19,1,2,3,5,6,7,9,10,11,12,13,14]
 #item_label = range(CLASS_NUM)
@@ -71,7 +71,7 @@ assert(len(item_label)==len(item_id) and len(item_label)==CLASS_NUM)
 
 ##############################################################################
 ##############################################################################
-#网络模型的设计部分，分类网络在此设置。
+#Model defination
 def SharePart(input, drop_out_rate):
     
     def pre_process(input):
@@ -120,7 +120,7 @@ def SharePart(input, drop_out_rate):
         
     return fc7
 
-#网络的任务层也就是softmax层
+#Mission layer
 def MissionPart(input):
     
     with tf.variable_scope('Classifier'):
@@ -128,7 +128,7 @@ def MissionPart(input):
 
     return result
 
-#网络层计算损失函数部分
+#loss function
 def SoftmaxWithLoss(logistic,label):
     
     label = tf.one_hot(label,depth = CLASS_NUM)
@@ -136,7 +136,7 @@ def SoftmaxWithLoss(logistic,label):
     
     return loss
 
-#训练网络时所调节的网络层参数以及优化方法
+#training
 def train_net(loss,base_lr=0.00001):
     
     
@@ -151,7 +151,7 @@ def train_net(loss,base_lr=0.00001):
     opt = tf.train.AdamOptimizer(base_lr).minimize(loss,var_list=trn_list)
     return opt
 
-#测试函数
+#test
 def Test(logistic,label):
     
     result = tf.cast(tf.argmax(logistic,axis = 1),tf.uint8)
@@ -161,7 +161,8 @@ def Test(logistic,label):
 
 #############################################################################################################################
 ################################################################################################################################
-#数据处理过程，整个过程的第一步，生成初始训练数据目录，测试数据目录，以及未标注池目录，生成的文件名称与之前设置的Experiment_NAME有关系
+#
+#Step1: data processing. Generate training data list, test data list and unlabeled data list. The names of these files are related to Experiment_NAME.
 def data_process():
     
     train_list,oracle_samples_list,test_samples_list = unit.GetListTvT(item_id,item_label,data_dir,trainset_num)  
@@ -183,7 +184,7 @@ def data_process():
         file_test.write(str(fp))
         file_test.write('\n')
     file_test.close()
-#载入数据过程，载入了之前生成的是三个目录数据
+#load data list
 def load_process():
     file_train = FILE_PATH + Experiment_NAME + '_x_train.txt'
     file_oracle = FILE_PATH + Experiment_NAME + '_x_oracle.txt'
@@ -197,7 +198,7 @@ def load_process():
     UnlabelData = np.concatenate([OracleData, TestData])
     UndataLabels = np.concatenate([OracleLabels, TestLabels])
 
-#如果需要训练最优模型时，应当把初始训练数据和未标注数据合并当做完整训练集
+#Data of initialization and unlabeled data should be merged when training under full supervised manner and this will get the best model
 #    TrainData = np.concatenate([TrainData, OracleData])            
 #    TrainLabels = np.concatenate([TrainLabels, OracleLabels])
     
@@ -223,9 +224,9 @@ def load_process():
 	
 ######################################################################################
 ######################################################################################
-#训练初始模型过程，通过初始训练数据集训练，保留在验证集上表现最优的模型，模型名称同样与 Experiment_NAME有关	
+#Model initialization: using initial dataset to pretrain network, and keep the best model in validation dataset. Model name is related to Experiment_NAME	
 def pretrain():
-    #载入数据
+    #load data
     TrainData, TrainLabels,_ ,_ ,\
     _, _, UnlabelData, UndataLabels,\
     lenn_s, _, lenn_u = load_process()
@@ -253,9 +254,9 @@ def pretrain():
 
     best_test_acc = 0
     
-    train_queue = np.arange(len(TrainData))        #训练数据的编号
-    test_queue = np.arange(len(UnlabelData))       #测试数据的编号
-	#以下程序都是通过编号来进行选择数据
+    train_queue = np.arange(len(TrainData))        #the id of training data
+    test_queue = np.arange(len(UnlabelData))       #the id of test data
+	#choose data through its id
     for i in range(EPOCH):
         shuffle(train_queue), shuffle(test_queue)
         train_accuracy = 0
@@ -297,9 +298,9 @@ def pretrain():
 
 ######################################################################################################################################
 ####################################################################################################################################
-#随机选择的训练过程
+#active learning with random selection strategy
 def random_active():
-    #载入数据
+    #load data
     TrainData, TrainLabels, OracleData,  OracleLabels,\
     TestData, TestLabels, _, _, lenn_s, lenn_t, _ = load_process()
     
@@ -372,9 +373,9 @@ def random_active():
 
 #############################################################################################################################################
 ############################################################################################################################################
-#信息熵挑选方法
+#Active learning with high entropy selection strategy
 def entropy_active():
-#载入数据
+    #load data
     TrainData, TrainLabels, OracleData,  OracleLabels,\
     TestData, TestLabels, _, _, lenn_s, lenn_t, _ = load_process()
     
@@ -417,17 +418,17 @@ def entropy_active():
     log_file.write("the pre train model accuracy is " + str(pretrain_accuracy))
     log_file.write("\n")
    
-#整个主动过程   
+#active learning   
     for a in range(ACTIVE_TIME):
         oracle_idx = np.arange(len(OracleData))
         oracle_que = []
-		#计算每个样本的信息熵
+		#calculate the entropy of each sample
         for i in oracle_idx:
             candidate_entropy = sess.run(entropy, feed_dict={batch:unit.changeshape_1(OracleData[i]),keep_prop:1.0})
             candidate_predict = sess.run(predict_class, feed_dict={batch:unit.changeshape_1(OracleData[i]),keep_prop:1.0})
             oracle_que.append((i,candidate_entropy[0],candidate_predict[0]))
         oracle_que = sorted(oracle_que, key = lambda candidate:candidate[1], reverse = True)
-		#oracle_que 包含了三个变量，[图片编号；信息熵；预测标签]
+		#oracle_que contians 3 veriable, [image id; entropy; predicted label]
 		#这里要注意temp变量的格式，他的下层每个类目是字符型的名称，名称与类目成对应关系。每个图片按照预测标签存放在temp名下，并进行信息熵排序
         temp = {}
         tag_queue = []
