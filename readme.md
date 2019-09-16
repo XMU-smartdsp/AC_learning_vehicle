@@ -17,20 +17,20 @@ ENGLISH
 * confusion matrix is generated in name: Experiment_NAME + method_name + stage saved under confusion_matrix directory. Matrix. npy file
 
 
-* simple log is generated in name: Experiment_NAME + method_name, 存放在simple_log文件夹下。简单记录了每一个阶段的准确率，对于双向算法同时记录了高置信度样本准确率。txt文件
+* simple log is generated in name: Experiment_NAME + method_name, saved under simple_log directory. Simply saved precision in every stage. For bi-direction entropy selection, high confidence sample precision is also saved. txt file.
 
 
-* Plot_conf.py 注意事项：
-绘制混淆矩阵的脚本。载入数字混淆矩阵后绘图即可。
+* Plot_conf.py:
+plot confusion matrix
 
-#3.Unit.py注意事项：
-一些读取数据时的函数,具体看注释即可。
+#3.Unit.py:
+load data
 
-#4.layer.py注意事项：
-网络层函数。
+#4.layer.py:
+network layer function
 
-#5.数据格式
-按1，2，3，4，5...的目录名存放车型图片，每个目录下面为一个类别的车辆。
+#5.data format
+save image in 1,2,3....directory. Every directory contains 1 class cars image.
 
 
 
