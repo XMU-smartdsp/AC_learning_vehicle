@@ -429,7 +429,7 @@ def entropy_active():
             oracle_que.append((i,candidate_entropy[0],candidate_predict[0]))
         oracle_que = sorted(oracle_que, key = lambda candidate:candidate[1], reverse = True)
 		#oracle_que contians 3 veriable, [image id; entropy; predicted label]
-		#这里要注意temp变量的格式，他的下层每个类目是字符型的名称，名称与类目成对应关系。每个图片按照预测标签存放在temp名下，并进行信息熵排序
+	#temp saves every entropy under every class and in every class entropies are sorted decreasingly
         temp = {}
         tag_queue = []
         for k in range(CLASS_NUM):
@@ -438,7 +438,7 @@ def entropy_active():
             temp[str(oracle_que[k][2])].append(oracle_que[k])
         for k in temp:
             temp[k] = sorted(temp[k], key=lambda x:x[1], reverse=True)
-        #先对类目进行洗牌，然后按照次序从中一个一个挑选，直到选满QUEUE_SIZE    
+        #shuffle in class axis and pick utill QUEUE_SIZE
         idx = 0
         temp_class = 0
         temp_order = range(CLASS_NUM)
@@ -454,7 +454,7 @@ def entropy_active():
         if a == 0 : 
             TrainData = OracleData[tag_queue]
             TrainLabels = OracleLabels[tag_queue]
-            np.delete(OracleData, tag_queue), np.delete(OracleLabels,tag_queue)              #标注后将数据从无标样本池中删除
+            np.delete(OracleData, tag_queue), np.delete(OracleLabels,tag_queue)              #labeled samples are deleted for unlabeled pool
         else:
             TrainData = np.concatenate((TrainData,OracleData[tag_queue]))
             TrainLabels = np.concatenate((TrainLabels, OracleLabels[tag_queue]))
@@ -480,9 +480,9 @@ def entropy_active():
 	
 #################################################################################################################
 ###############################################################################################################
-#双向主动学习过程，实现方法和信息熵差不多，就是多选了后面的高置信度样本
+#Bi-direction active learning with high entropy samples and high confidence samples.
 def bidirectional_active():
-#载入数据
+#load data
     TrainData, TrainLabels, OracleData,  OracleLabels,\
     TestData, TestLabels, _, _, lenn_s, lenn_t, _ = load_process()
     
@@ -569,7 +569,7 @@ def bidirectional_active():
             else:
                 temp_class = (temp_class + 1)%(CLASS_NUM)
                 
-#########################################'''not put back, x_train+x_oracle'''高置信度样本不放回，初始训练集和未标注样本池一起组成新未标注样本池         
+#########################################'''not put back, x_train+x_oracle'''         
                 
 #        TrainData = np.concatenate((TrainData,OracleData[tag_queue]))
 #        TrainData = np.concatenate((TrainData,OracleData[tag_queue2]))
@@ -578,7 +578,7 @@ def bidirectional_active():
 #        tag_queue2_rlabels = OracleLabels[tag_queue2]
 #        np.delete(OracleData, tag_queue + tag_queue2), np.delete(OracleLabels,tag_queue + tag_queue2)
         
-###############################################''' put back , x_train+x_oracle'''高新度样本放回，初始训练集和未标注样本池一起组成新未标注样本池
+###############################################''' put back , x_train+x_oracle'''
 #        TrainData0 =  dc(TrainData)
 #        TrainLabels0 = dc(TrainLabels)
 #        TrainData0 = np.concatenate((TrainData0,OracleData[tag_queue]))
@@ -589,7 +589,7 @@ def bidirectional_active():
 #        np.delete(OracleData, tag_queue), np.delete(OracleLabels,tag_queue)
 
 
-################################################not put back,x_oracle   高置信度样本不放回，未标注样本池依然是未标注样本池
+################################################not put back,x_oracle   
         if a == 0:
             TrainData = np.concatenate((OracleData[tag_queue],OracleData[tag_queue2]))
             TrainLabels = np.concatenate((OracleLabels[tag_queue], np.array(tag_queue2_labels)))
@@ -626,7 +626,7 @@ def bidirectional_active():
                 
 ###################################################################################################################
 ##################################################################################################################
-#用真实标签代替模型标签的双向学习方法
+#active learning with strategy taking ground truth label as model prediction用真实标签代替模型标签的双向学习方法
 def bidirectional_active_expert():
     TrainData, TrainLabels, OracleData,  OracleLabels,\
     TestData, TestLabels, _, _, lenn_s, lenn_t, _ = load_process()
@@ -772,7 +772,7 @@ def bidirectional_active_expert():
 
 
 #############################################################################################
-#测试流程函数，将会测试四种方法每个流程的模型，并生成混淆矩阵以及黑白混淆矩阵图，以及presion,recall,f1值的统计表                
+#test and generate confusion matrixes/precision/recall/f1 for each model
 def Test_model_process():
     file_test = FILE_PATH + Experiment_NAME + '_x_test.txt'
 #    file_test2 = FILE_PATH + Experiment_NAME + '_x_oracle.txt'
@@ -805,8 +805,7 @@ def Test_model_process():
     init = tf.global_variables_initializer()
     sess = tf.Session(config = config)
     sess.run(init)
-    
-#这是测初始模型时用到的部分，可以忽略    
+      
 #    confunsion_matix = []
 #    file_report = open(MODEL_PATH+'confusion_matrix/'+Experiment_NAME+'_pre_'+'report.txt','w')
 #    recall = []
